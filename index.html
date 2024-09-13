@@ -62,7 +62,7 @@
         </div>
         <div class="input-group">
             <label for="productImage">Product Image:</label>
-            <input type="file" id="productImage" accept="image/*">
+            <input type="file" id="productImage" accept="image/*" capture="environment">
         </div>
         <div class="input-group">
             <label for="qrCode">QR Code:</label>
@@ -74,40 +74,51 @@
             <button id="saveProductButton">Save Product</button>
         </div>
     </div>
+
+    <!-- Add jsQR library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
     <script>
         const scanQrCodeButton = document.getElementById('scanQrCodeButton');
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const context = canvas.getContext('2d');
         let scanning = false;
+        let qrCodeResult = null;
 
         scanQrCodeButton.addEventListener('click', () => {
             navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
                 .then((stream) => {
                     video.srcObject = stream;
-                    video.setAttribute('playsinline', true); // required to tell iOS safari we don't want fullscreen
+                    video.setAttribute('playsinline', true); // for iOS
+                    video.style.display = 'block';
                     video.play();
                     scanning = true;
-                    requestAnimationFrame(tick);
+                    scanQRCode();
+                })
+                .catch(err => {
+                    alert("Error accessing the camera: " + err.message);
                 });
         });
 
-        function tick() {
+        function scanQRCode() {
             if (scanning) {
                 if (video.readyState === video.HAVE_ENOUGH_DATA) {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                     context.drawImage(video, 0, 0, canvas.width, canvas.height);
                     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    // Here you would integrate a QR code library to decode the image
-                    // For example: const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
-                    // if (qrCode) {
-                    //     console.log(qrCode.data);
-                    //     scanning = false;
-                    //     video.srcObject.getTracks().forEach(track => track.stop());
-                    // }
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+                    
+                    if (code) {
+                        qrCodeResult = code.data;
+                        alert('QR Code detected: ' + qrCodeResult);
+                        scanning = false;
+                        video.srcObject.getTracks().forEach(track => track.stop());
+                        video.style.display = 'none';
+                    }
                 }
-                requestAnimationFrame(tick);
+                requestAnimationFrame(scanQRCode);
             }
         }
 
@@ -115,8 +126,28 @@
             const productName = document.getElementById('productName').value;
             const productLocation = document.getElementById('productLocation').value;
             const productImage = document.getElementById('productImage').files[0];
-            console.log('Product saved:', { productName, productLocation, productImage });
-            // Here you would send the data to your server
+            
+            if (!productName || !productLocation || !productImage) {
+                alert("Please fill all fields!");
+                return;
+            }
+
+            // Mock save product data (You would send this data to your backend server)
+            const productData = {
+                name: productName,
+                location: productLocation,
+                qrCode: qrCodeResult,
+                image: productImage.name // This would normally be sent to a server
+            };
+
+            console.log('Product saved:', productData);
+            alert('Product saved successfully!');
+
+            // Clear inputs
+            document.getElementById('productName').value = '';
+            document.getElementById('productLocation').value = '';
+            document.getElementById('productImage').value = '';
+            qrCodeResult = null;
         });
     </script>
 </body>
