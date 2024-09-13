@@ -1,11 +1,123 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My GitHub Page</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .container {
+            width: 90%;
+            max-width: 600px;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="file"],
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        video, canvas {
+            width: 100%;
+            display: none;
+        }
+        #output {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to My GitHub Page</h1>
-    <p>This is a simple website hosted on GitHub Pages.</p>
+    <div class="container">
+        <h1>Inventory System</h1>
+        <div class="input-group">
+            <label for="productName">Product Name:</label>
+            <input type="text" id="productName" placeholder="Enter product name">
+        </div>
+        <div class="input-group">
+            <label for="productLocation">Location:</label>
+            <input type="text" id="productLocation" placeholder="Enter location in lab">
+        </div>
+        <div class="input-group">
+            <label for="productImage">Product Image:</label>
+            <input type="file" id="productImage" accept="image/*">
+        </div>
+        <div class="input-group">
+            <label for="qrCode">QR Code:</label>
+            <button id="scanQrCodeButton">Scan QR Code</button>
+        </div>
+        <video id="video"></video>
+        <canvas id="canvas"></canvas>
+        <div class="input-group">
+            <button id="saveProductButton">Save Product</button>
+        </div>
+    </div>
+    <script>
+        const scanQrCodeButton = document.getElementById('scanQrCodeButton');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        let scanning = false;
+
+        scanQrCodeButton.addEventListener('click', () => {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then((stream) => {
+                    video.srcObject = stream;
+                    video.setAttribute('playsinline', true); // required to tell iOS safari we don't want fullscreen
+                    video.play();
+                    scanning = true;
+                    requestAnimationFrame(tick);
+                });
+        });
+
+        function tick() {
+            if (scanning) {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    // Here you would integrate a QR code library to decode the image
+                    // For example: const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+                    // if (qrCode) {
+                    //     console.log(qrCode.data);
+                    //     scanning = false;
+                    //     video.srcObject.getTracks().forEach(track => track.stop());
+                    // }
+                }
+                requestAnimationFrame(tick);
+            }
+        }
+
+        document.getElementById('saveProductButton').addEventListener('click', () => {
+            const productName = document.getElementById('productName').value;
+            const productLocation = document.getElementById('productLocation').value;
+            const productImage = document.getElementById('productImage').files[0];
+            console.log('Product saved:', { productName, productLocation, productImage });
+            // Here you would send the data to your server
+        });
+    </script>
 </body>
 </html>
